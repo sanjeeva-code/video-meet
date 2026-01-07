@@ -9,16 +9,12 @@ export default function VideoTile({ track }: { track: any }) {
     if (track && ref.current) {
       track.play(ref.current);
     }
-
-    return () => {
-      track?.stop();
-    };
+    return () => track?.stop();
   }, [track]);
 
   return (
-    <div
-      ref={ref}
-      className="w-full h-full bg-black rounded-lg overflow-hidden"
-    />
+    <div className="rounded-xl overflow-hidden bg-black aspect-video">
+      <div ref={ref} className="w-full h-full" />
+    </div>
   );
 }
