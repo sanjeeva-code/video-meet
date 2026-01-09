@@ -24,11 +24,14 @@ export function CreateLinkDialog({ open, onClose }: CreateLinkDialogProps) {
   const [copied, setCopied] = useState(false);
 
   const generateMeetingLink = () => {
-    const meetingId = Math.random().toString(36).substring(2, 12).toUpperCase();
-    const link = `https://meet.yourapp.com/${meetingId}`;
-    setGeneratedLink(link);
-    toast.success("Meeting link created successfully!");
-  };
+//   const meetingId = Math.random().toString(36).substring(2, 12).toUpperCase();
+  // Use the current domain dynamically
+  const origin = typeof window !== "undefined" ? window.location.origin : "https://example.com";
+  const link = `${origin}`;
+  setGeneratedLink(link);
+  toast.success("Meeting link created successfully!");
+};
+
 
   const copyToClipboard = async () => {
     try {

@@ -47,12 +47,14 @@ export function NotesPanel({ onClose }: NotesPanelProps) {
 
       {/* Notes Area */}
       <div className="flex-1 p-4 flex flex-col">
-        <Textarea
+       <Textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Take notes during the meeting..."
-          className="flex-1 resize-none border-purple-200 focus:border-sky-400 focus:ring-sky-400 mb-4"
+          className="w-full border-purple-200 focus:border-sky-400 focus:ring-sky-400 mb-4 h-96 overflow-y-auto resize-none"
         />
+
+
         
         <div className="text-xs text-gray-500 mb-4">
           {notes.length} characters • Auto-saved

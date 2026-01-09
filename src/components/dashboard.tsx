@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Video, Plus, LogIn, Calendar, Clock, Users, Settings, LogOut, User, History } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Video, Plus, LogIn, Calendar, Clock, Users, Settings, LogOut, History } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card } from "./ui/card";
@@ -28,54 +28,14 @@ interface DashboardProps {
 }
 
 const MOCK_UPCOMING_MEETINGS: Meeting[] = [
-  {
-    id: '1',
-    title: 'Weekly Team Sync',
-    date: '2026-01-08',
-    time: '10:00 AM',
-    participants: 12,
-    isRecurring: true,
-    meetingCode: 'abc-defg-hij',
-  },
-  {
-    id: '2',
-    title: 'Client Presentation',
-    date: '2026-01-09',
-    time: '2:30 PM',
-    participants: 8,
-    isRecurring: false,
-    meetingCode: 'xyz-wxyz-abc',
-  },
-  {
-    id: '3',
-    title: 'Project Review',
-    date: '2026-01-10',
-    time: '11:00 AM',
-    participants: 15,
-    isRecurring: false,
-    meetingCode: 'lmn-opqr-stu',
-  },
+  { id: '1', title: 'Weekly Team Sync', date: '2026-01-08', time: '10:00 AM', participants: 12, isRecurring: true, meetingCode: 'abc-defg-hij' },
+  { id: '2', title: 'Client Presentation', date: '2026-01-09', time: '2:30 PM', participants: 8, isRecurring: false, meetingCode: 'xyz-wxyz-abc' },
+  { id: '3', title: 'Project Review', date: '2026-01-10', time: '11:00 AM', participants: 15, isRecurring: false, meetingCode: 'lmn-opqr-stu' },
 ];
 
 const MOCK_RECENT_MEETINGS: Meeting[] = [
-  {
-    id: '4',
-    title: 'Design Sprint Planning',
-    date: '2026-01-06',
-    time: '3:00 PM',
-    participants: 10,
-    isRecurring: false,
-    meetingCode: 'def-ghij-klm',
-  },
-  {
-    id: '5',
-    title: 'Quarterly Review',
-    date: '2026-01-05',
-    time: '9:00 AM',
-    participants: 25,
-    isRecurring: false,
-    meetingCode: 'nop-qrst-uvw',
-  },
+  { id: '4', title: 'Design Sprint Planning', date: '2026-01-06', time: '3:00 PM', participants: 10, isRecurring: false, meetingCode: 'def-ghij-klm' },
+  { id: '5', title: 'Quarterly Review', date: '2026-01-05', time: '9:00 AM', participants: 25, isRecurring: false, meetingCode: 'nop-qrst-uvw' },
 ];
 
 export function Dashboard({
@@ -90,36 +50,90 @@ export function Dashboard({
   const [meetingCode, setMeetingCode] = useState("");
   const [upcomingMeetings] = useState<Meeting[]>(MOCK_UPCOMING_MEETINGS);
   const [recentMeetings] = useState<Meeting[]>(MOCK_RECENT_MEETINGS);
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
 
-  const handleJoinWithCode = () => {
-    if (!meetingCode.trim()) {
-      toast.error("Please enter a meeting code");
-      return;
-    }
-    onJoinMeeting(meetingCode);
-  };
-
-  const handleQuickJoin = (code: string) => {
-    onJoinMeeting(code);
-  };
-
+  // Format dates nicely
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    if (date.toDateString() === today.toDateString()) {
-      return 'Today';
-    } else if (date.toDateString() === tomorrow.toDateString()) {
-      return 'Tomorrow';
-    } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    }
+    if (date.toDateString() === today.toDateString()) return 'Today';
+    if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  // Generate a meeting link and update URL
+  const generateMeetingLink = (meetingCode: string) => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://example.com";
+    const link = `${origin}/${meetingCode}`;
+
+    if (typeof window !== "undefined") {
+      window.history.pushState({}, "", `/${meetingCode}`);
+    }
+
+    setGeneratedLink(link);
+    setTimeout(() => setGeneratedLink(null), 10000); // hide after 10s
+    return link;
+  };
+
+  // Join meeting from input
+  const handleJoinWithCode = () => {
+    if (!meetingCode.trim()) {
+      toast.error("Please enter a meeting code");
+      return;
+    }
+    generateMeetingLink(meetingCode);
+    onJoinMeeting(meetingCode);
+    toast.success(`Joining meeting: ${meetingCode}`);
+  };
+
+  // Join directly from card
+  const handleJoinNow = (meetingCode: string) => {
+    const link = generateMeetingLink(meetingCode);
+    toast.success(`Joining meeting: ${link}`);
+    onJoinMeeting(meetingCode);
+  };
+
+  // Auto-join if URL contains meeting code
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const codeFromURL = window.location.pathname.slice(1);
+      if (codeFromURL) {
+        toast.info(`Joining meeting from URL: ${codeFromURL}`);
+        generateMeetingLink(codeFromURL);
+        onJoinMeeting(codeFromURL);
+      }
+    }
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-100 via-purple-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-sky-100 via-purple-50 to-white relative">
+      {/* Popup for generated meeting link */}
+      {generatedLink && (
+        <div className="fixed top-6 right-6 z-50 bg-white border border-purple-300 shadow-lg rounded-lg p-4 flex flex-col items-start gap-2 animate-fade-in">
+          <p className="text-sm text-purple-900 font-medium">Meeting link:</p>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              readOnly
+              value={generatedLink}
+              className="px-2 py-1 border border-gray-300 rounded text-sm w-64"
+            />
+            <Button
+              onClick={() => {
+                navigator.clipboard.writeText(generatedLink);
+                toast.success("Link copied to clipboard!");
+              }}
+              className="px-2 py-1 text-white bg-purple-600 hover:bg-purple-700 rounded text-sm"
+            >
+              Copy
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b-2 border-purple-200 px-6 py-4 shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -131,13 +145,8 @@ export function Dashboard({
               MeetFlow
             </h1>
           </div>
-
           <div className="flex items-center gap-4">
-            <Button
-              onClick={onOpenProfile}
-              variant="ghost"
-              className="flex items-center gap-3 hover:bg-purple-50"
-            >
+            <Button onClick={onOpenProfile} variant="ghost" className="flex items-center gap-3 hover:bg-purple-50">
               <div className="size-10 rounded-full bg-gradient-to-r from-sky-500 to-purple-600 flex items-center justify-center text-white font-semibold">
                 {userName.split(' ').map(n => n[0]).join('').toUpperCase()}
               </div>
@@ -146,11 +155,7 @@ export function Dashboard({
                 <p className="text-xs text-gray-600">{userEmail}</p>
               </div>
             </Button>
-            <Button
-              onClick={onLogout}
-              variant="ghost"
-              className="text-red-600 hover:bg-red-50"
-            >
+            <Button onClick={onLogout} variant="ghost" className="text-red-600 hover:bg-red-50">
               <LogOut className="size-5" />
             </Button>
           </div>
@@ -198,7 +203,7 @@ export function Dashboard({
                 />
                 <Button
                   onClick={handleJoinWithCode}
-                  className="bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white"
+                  className="bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-purple-700 text-white"
                 >
                   Join
                 </Button>
@@ -264,10 +269,10 @@ export function Dashboard({
                 </div>
                 <div className="flex gap-2 mt-4">
                   <Button
-                    onClick={() => handleQuickJoin(meeting.meetingCode)}
+                    onClick={() => handleJoinNow(meeting.meetingCode)}
                     className="flex-1 bg-gradient-to-r from-sky-500 to-purple-600 hover:from-sky-600 hover:to-purple-700 text-white"
                   >
-                    Join Now
+                    Join & Generate Link
                   </Button>
                   <Button
                     variant="outline"
@@ -316,7 +321,7 @@ export function Dashboard({
                 </div>
                 <div className="flex gap-2 mt-4">
                   <Button
-                    onClick={() => handleQuickJoin(meeting.meetingCode)}
+                    onClick={() => handleJoinNow(meeting.meetingCode)}
                     variant="outline"
                     className="flex-1 border-2 border-sky-300 text-sky-700 hover:bg-sky-50"
                   >
